@@ -10,6 +10,8 @@
 #include <sys/mman.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <time.h>
+#include <syslog.h>
 
 #define MAX_CONNECTIONS 1000
 #define BUF_SIZE 65535
@@ -27,19 +29,19 @@ char *method, // "GET" or "POST"
     *uri,     // "/index.html" things before '?'
     *qs,      // "a=1&b=2" things after  '?'
     *prot,    // "HTTP/1.1"
-    *payload; // for POST
-
+    *payload, // for POST
+	*logMessage;
+	
+FILE * logFile;
 int payload_size;
+struct sockaddr_in clientaddr;
 
-void serve_forever(const char *PORT) {
-  struct sockaddr_in clientaddr;
+void serve_forever(const char *PORT, const char *ROOT) {
   socklen_t addrlen;
-
   int slot = 0;
 
-  printf("Server started %shttp://127.0.0.1:%s%s\n", "\033[92m", PORT,
-         "\033[0m");
-
+  logFile = fopen("var/log/picofoxweb/log.txt", "w");
+  
   // create shared memory for client slot array
   clients = mmap(NULL, sizeof(*clients) * MAX_CONNECTIONS,
                  PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
@@ -50,6 +52,9 @@ void serve_forever(const char *PORT) {
     clients[i] = -1;
   start_server(PORT);
 
+  logMessage = malloc(1024);
+  sprintf(logMessage, "Server started at port no. %s with root directory as %s\n", PORT, ROOT);
+  syslog(LOG_INFO, "%s", logMessage);
   // Ignore SIGCHLD to avoid zombie threads
   signal(SIGCHLD, SIG_IGN);
 
@@ -76,6 +81,7 @@ void serve_forever(const char *PORT) {
     while (clients[slot] != -1)
       slot = (slot + 1) % MAX_CONNECTIONS;
   }
+  fclose(logFile);
 }
 
 // start server
@@ -178,7 +184,13 @@ void respond(int slot) {
 
     uri_unescape(uri);
 
-    fprintf(stderr, "\x1b[32m + [%s] %s\x1b[0m\n", method, uri);
+    char * clientIP = inet_ntoa(clientaddr.sin_addr);
+    char date[30];
+	time_t curTime;
+    time(&curTime);
+	
+    strftime(date, 30, "%d/%b/%Y:%H:%M:%S %z", localtime(&curTime));
+    sprintf(logMessage, "%s - - [%s] \"%s %s %s\"", clientIP, date, method, uri, prot);
 
     qs = strchr(uri, '?');
 
@@ -203,7 +215,6 @@ void respond(int slot) {
       h->name = key;
       h->value = val;
       h++;
-      fprintf(stderr, "[H] %s: %s\n", key, val);
       t = val + 1 + strlen(val);
       if (t[1] == '\r' && t[2] == '\n')
         break;
@@ -217,9 +228,12 @@ void respond(int slot) {
     int clientfd = clients[slot];
     dup2(clientfd, STDOUT_FILENO);
     close(clientfd);
+    sprintf(logMessage, "%s %d %d [%s] \"%s %s %s\"", clientIP, clientfd, clientfd, date, method, uri, prot);
 
     // call router
     route();
+    sprintf(logMessage, "%s %d", logMessage, payload_size);
+    syslog(LOG_INFO, "%s", logMessage);
 
     // tidy up
     fflush(stdout);
