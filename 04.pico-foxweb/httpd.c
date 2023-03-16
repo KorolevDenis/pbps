@@ -82,7 +82,7 @@ void serve_forever(const char *PORT, const char *ROOT) {
       slot = (slot + 1) % MAX_CONNECTIONS;
   }
 	
-  free(logMessage)
+  free(logMessage);
   fclose(logFile);
 }
 
