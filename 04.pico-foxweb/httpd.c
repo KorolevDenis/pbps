@@ -233,7 +233,7 @@ void respond(int slot) {
     // call router
     route();
     sprintf(logMessage, "%s %d", logMessage, payload_size);
-    syslog(LOG_INFO, "%s", logMessage);
+    fprintf(logFile, "%s\n", logMessage);
 
     // tidy up
     fflush(stdout);
