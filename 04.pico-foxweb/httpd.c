@@ -34,7 +34,6 @@ char *method, // "GET" or "POST"
 	
 FILE * logFile;
 int payload_size;
-struct sockaddr_in clientaddr;
 
 void serve_forever(const char *PORT, const char *ROOT) {
   socklen_t addrlen;
@@ -60,6 +59,7 @@ void serve_forever(const char *PORT, const char *ROOT) {
 
   // ACCEPT connections
   while (1) {
+	struct sockaddr_in clientaddr;
     addrlen = sizeof(clientaddr);
     clients[slot] = accept(listenfd, (struct sockaddr *)&clientaddr, &addrlen);
 
@@ -69,7 +69,7 @@ void serve_forever(const char *PORT, const char *ROOT) {
     } else {
       if (fork() == 0) {
         close(listenfd);
-        respond(slot);
+        respond(slotl, clientaddr);
         close(clients[slot]);
         clients[slot] = -1;
         exit(0);
@@ -166,7 +166,7 @@ static void uri_unescape(char *uri) {
 }
 
 // client connection
-void respond(int slot) {
+void respond(int slot, struct sockaddr_in clientaddr) {
   int rcvd;
 
   buf = malloc(BUF_SIZE);

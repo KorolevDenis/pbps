@@ -4,12 +4,14 @@
 #define CHUNK_SIZE 1024 // read 1024 bytes at a time
 
 // Public directory settings
-#define PUBLIC_DIR "./webroot"
 #define INDEX_HTML "/index.html"
 #define NOT_FOUND_HTML "/404.html"
 
+char * PUBLIC_DIR;
+
 int main(int c, char **v) {
-  char *port = c == 1 ? "8000" : v[1];
+  char *port = c <= 1 ? "8000" : v[1];
+  PUBLIC_DIR = c <= 2 ? "./webroot": v[2];
   serve_forever(port, PUBLIC_DIR);
   return 0;
 }
