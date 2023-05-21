@@ -1,5 +1,8 @@
 #include "httpd.h"
 #include <sys/stat.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <regex.h>
 
 #define CHUNK_SIZE 1024 // read 1024 bytes at a time
 
@@ -10,9 +13,9 @@
 char * PUBLIC_DIR;
 
 int main(int c, char **v) {
-  char *port = c <= 1 ? "8000" : v[1];
+  char *port = c == 1 ? "8000" : v[1];
   PUBLIC_DIR = c <= 2 ? "./webroot": v[2];
-  serve_forever(port, PUBLIC_DIR);
+  serve_forever(port);
   return 0;
 }
 
@@ -43,13 +46,39 @@ int read_file(const char *file_name) {
   return err;
 }
 
+int check_command_injection(char* input_string) {
+    regex_t regex;
+    int reti;
+
+    // компилируем регулярное выражение
+    reti = regcomp(&regex, "[&|;`$<>]", 0);
+
+    // проверяем, соответствует ли строка регулярному выражению
+    reti = regexec(&regex, input_string, 0, NULL, 0);
+    if (!reti) {
+        // если соответствует, возвращаем 1
+        return 1;
+    } else if (reti == REG_NOMATCH) {
+        // если соответствует, возвращаем 0
+        return 0;
+    }
+
+    // освобождаем память
+    regfree(&regex);
+}
+
 void route() {
   ROUTE_START()
 
   GET("/") {
+	if (check_command_injection(qs)) {
+		HTTP_400;
+		return;
+	}	
+	
     char index_html[20];
     sprintf(index_html, "%s%s", PUBLIC_DIR, INDEX_HTML);
-
+	
     HTTP_200;
     if (file_exists(index_html)) {
       read_file(index_html);
@@ -59,9 +88,13 @@ void route() {
   }
 
   GET("/test") {
+	if (check_command_injection(qs)) {
+		HTTP_400;
+		return;
+	}	
+	
     HTTP_200;
     printf("List of request headers:\n\n");
-
     header_t *h = request_headers();
 
     while (h->name) {
@@ -71,6 +104,11 @@ void route() {
   }
 
   POST("/") {
+	if (check_command_injection(payload)) {
+		HTTP_400;
+		return;
+	}	
+	
     HTTP_201;
     printf("Wow, seems that you POSTed %d bytes.\n", payload_size);
     printf("Fetch the data using `payload` variable.\n");
@@ -79,6 +117,11 @@ void route() {
   }
 
   GET(uri) {
+	if (check_command_injection(qs)) {
+		HTTP_400;
+		return;
+	}	
+	
     char file_name[255];
     sprintf(file_name, "%s%s", PUBLIC_DIR, uri);
 
