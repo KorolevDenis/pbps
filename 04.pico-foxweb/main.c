@@ -52,19 +52,28 @@ int check_command_injection(char* input_string) {
 
     // компилируем регулярное выражение
     reti = regcomp(&regex, "[&|;`\"$<>]", 0);
-
-    // проверяем, соответствует ли строка регулярному выражению
-    reti = regexec(&regex, input_string, 0, NULL, 0);
-    if (!reti) {
-        // если соответствует, возвращаем 1
-        return 1;
-    } else if (reti == REG_NOMATCH) {
-        // если соответствует, возвращаем 0
-        return 0;
+    
+    int i = 0;
+    char *token = strtok(input_string, "&");
+    while (token != NULL) {
+        // проверяем, присутствует ли в паре "имя параметра = значение" символ =
+        if (strchr(token, '=') == NULL) {
+            regfree(&regex);
+            return 1;
+        }
+        
+        // проверяем, соответствует ли строка регулярному выражению
+        reti = regexec(&regex, token, 0, NULL, 0);
+        if (!reti) {
+            regfree(&regex);
+            // если соответствует, возвращаем 1
+            return 1;
+        }
+        token = strtok(NULL, "&");
     }
-
-    // освобождаем память
+    
     regfree(&regex);
+    return 0;
 }
 
 void route() {
