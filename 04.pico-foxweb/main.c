@@ -51,7 +51,7 @@ int check_command_injection(char* input_string) {
     int reti;
 
     // компилируем регулярное выражение
-    reti = regcomp(&regex, "[&|;`$<>]", 0);
+    reti = regcomp(&regex, "[&|;`\"$<>]", 0);
 
     // проверяем, соответствует ли строка регулярному выражению
     reti = regexec(&regex, input_string, 0, NULL, 0);
