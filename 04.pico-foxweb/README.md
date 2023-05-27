@@ -26,6 +26,11 @@ make
 - Запуск
 
 ~~~
-./PICOFoxweb 8080
+make install
 ~~~
 
+- uninstall
+
+~~~
+make uninstall
+~~~
