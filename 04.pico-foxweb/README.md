@@ -29,7 +29,7 @@ make
 make install
 ~~~
 
-- uninstall
+- Остановка
 
 ~~~
 make uninstall
