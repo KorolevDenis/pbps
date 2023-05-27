@@ -97,10 +97,10 @@ void route() {
   ROUTE_START()
 
   GET("/") {
-	if (check_command_injection_qs(qs)) {
-		HTTP_400;
-		return;
-	}	
+    if (check_command_injection_qs(qs)) {
+      HTTP_400;
+      return;
+    }	
 	
     char index_html[20];
     sprintf(index_html, "%s%s", PUBLIC_DIR, INDEX_HTML);
@@ -114,10 +114,10 @@ void route() {
   }
 
   GET("/test") {
-	if (check_command_injection_qs(qs)) {
-		HTTP_400;
-		return;
-	}	
+    if (check_command_injection_qs(qs)) {
+      HTTP_400;
+      return;
+    }	
 	
     HTTP_200;
     printf("List of request headers:\n\n");
@@ -130,10 +130,10 @@ void route() {
   }
 
   POST("/") {
-	if (check_command_injection_payload(payload)) {
-		HTTP_400;
-		return;
-	}	
+    if (check_command_injection_payload(payload)) {
+      HTTP_400;
+      return;
+    }	
 	
     HTTP_201;
     printf("Wow, seems that you POSTed %d bytes.\n", payload_size);
@@ -143,10 +143,10 @@ void route() {
   }
 
   GET(uri) {
-	if (check_command_injection_qs(qs)) {
-		HTTP_400;
-		return;
-	}	
+    if (check_command_injection_qs(qs)) {
+      HTTP_400;
+      return;
+    }	
 	
     char file_name[255];
     sprintf(file_name, "%s%s", PUBLIC_DIR, uri);
