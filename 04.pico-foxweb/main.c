@@ -51,7 +51,7 @@ int check_command_injection_qs(char* input_string) {
     int reti;
 
     // компилируем регулярное выражение
-    regcomp(&regex, "[&|;`\"$<>]", 0);
+    regcomp(&regex, "[&|;`\"$<>()*^~!.%@/:+,\"]", 0);
 
     char *token = strtok(input_string, "&");
     while (token != NULL) {
@@ -80,7 +80,7 @@ int check_command_injection_payload(char* input_string) {
     int reti;
 
     // компилируем регулярное выражение
-    regcomp(&regex, "[&|;`\"$<>]", 0);
+    regcomp(&regex, "[&|;`\"$<>()*^~!.%@/:+,\"]", 0);
     // проверяем, соответствует ли строка регулярному выражению
     reti = regexec(&regex, input_string, 0, NULL, 0);
     if (!reti) {
