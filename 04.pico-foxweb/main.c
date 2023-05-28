@@ -46,41 +46,13 @@ int read_file(const char *file_name) {
   return err;
 }
 
-int check_command_injection_qs(char* input_string) {
+int check_command_injection(char* input_string) {
     regex_t regex;
     int reti;
 
     // компилируем регулярное выражение
-    regcomp(&regex, "[&|;`\"$<>()*^~!.%@/:+,\"]", 0);
+    regcomp(&regex, "(.+( & ).+)|(.+( && ).+)|(.+( \\| ).+)|(.+( \\|\\| ).+)|(.+( ; ).+)|(.+( \\$\\(.+\\)).*)|(.+(%0A).+)|(.+(`.+`).*)|(.+(\" ).+)|(.+(\' ).+)", 1);
 
-    char *token = strtok(input_string, "&");
-    while (token != NULL) {
-        // проверяем, присутствует ли в паре "имя параметра = значение" символ =
-        if (strchr(token, '=') == NULL) {
-            regfree(&regex);
-            return 1;
-        }
-        
-        // проверяем, соответствует ли строка регулярному выражению
-        reti = regexec(&regex, token, 0, NULL, 0);
-        if (!reti) {
-            regfree(&regex);
-            // если соответствует, возвращаем 1
-            return 1;
-        }
-        token = strtok(NULL, "&");
-    }
-    
-    regfree(&regex);
-    return 0;
-}
-
-int check_command_injection_payload(char* input_string) {
-    regex_t regex;
-    int reti;
-
-    // компилируем регулярное выражение
-    regcomp(&regex, "[&|;`\"$<>()*^~!.%@/:+,\"]", 0);
     // проверяем, соответствует ли строка регулярному выражению
     reti = regexec(&regex, input_string, 0, NULL, 0);
     if (!reti) {
@@ -88,7 +60,7 @@ int check_command_injection_payload(char* input_string) {
         // если соответствует, возвращаем 1
         return 1;
     }
-    
+
     regfree(&regex);
     return 0;
 }
@@ -97,7 +69,7 @@ void route() {
   ROUTE_START()
 
   GET("/") {
-    if (check_command_injection_qs(qs)) {
+    if (check_command_injection(qs)) {
       HTTP_400;
       return;
     }	
@@ -114,7 +86,7 @@ void route() {
   }
 
   GET("/test") {
-    if (check_command_injection_qs(qs)) {
+    if (check_command_injection(qs)) {
       HTTP_400;
       return;
     }	
@@ -130,7 +102,7 @@ void route() {
   }
 
   POST("/") {
-    if (check_command_injection_payload(payload)) {
+    if (check_command_injection(payload)) {
       HTTP_400;
       return;
     }	
@@ -143,7 +115,7 @@ void route() {
   }
 
   GET(uri) {
-    if (check_command_injection_qs(qs)) {
+    if (check_command_injection(qs)) {
       HTTP_400;
       return;
     }	
